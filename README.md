@@ -1,48 +1,53 @@
-# 📊 Monitoramento Global de Saúde Pública (COVID-19)
-
-> **Análise da evolução temporal e impacto geográfico da pandemia, com foco em métricas de incidência e volume.**
+# 🌍 Global Health Monitor: COVID-19 & Data Modeling
 
 ![Status](https://img.shields.io/badge/Status-Concluído-success)
-![Stack](https://img.shields.io/badge/Stack-Unity%20Catalog%20|%20PySpark%20|%20PowerBI-blue)
+![Stack](https://img.shields.io/badge/Stack-Databricks%20|%20Star%20Schema%20|%20PowerBI-blue)
 
-## 🖼️ Visão Geral do Dashboard
-<img width="1919" height="1079" alt="Image" src="https://github.com/user-attachments/assets/9a07f000-d6fa-4a57-a45a-0d26b715ee03" />
----
+> **"Números absolutos mentem. Como comparar o impacto da pandemia na Índia vs. Islândia?"**
 
-## 💼 O Desafio de Negócio
+Este projeto de **BI & Analytics Engineering** resolve um problema clássico de saúde pública: a comparabilidade de dados. O objetivo foi transformar dados brutos e sujos em métricas padronizadas (Taxa de Incidência), utilizando uma modelagem dimensional robusta no Databricks.
 
-O objetivo deste projeto foi criar um modelo de dados confiável e escalável capaz de analisar o impacto da COVID-19 em diversas regiões geográficas e ao longo do tempo. O desafio de Engenharia de Dados residiu em:
-1.  Tratar grandes volumes de dados de notificação diária com alta variabilidade.
-2.  Garantir a Qualidade de Dados (DQ) em métricas críticas (Casos e População).
-3.  Calcular métricas proporcionais de alta complexidade (Taxa de Incidência).
+O diferencial técnico é a implementação de um **Star Schema (Modelo Estrela)** físico na camada Gold, otimizando a performance do Power BI ao entregar Fatos e Dimensões prontos.
 
 ---
 
-## 🛠️ A Solução Técnica (Arquitetura Medalhão)
+## 🖼️ Visão do Analista (Dashboard)
 
-Construí um pipeline End-to-End em ambiente Lakehouse, garantindo governança de dados através do **Unity Catalog** (`saude_global`) e performance com o **Apache Spark**.
+O painel foca na **Taxa de Incidência (Casos por 100k hab.)**, permitindo comparar a severidade da pandemia independentemente do tamanho da população.
 
-### Arquitetura do Pipeline
+<img width="1919" height="1079" alt="Dashboard COVID-19" src="https://github.com/user-attachments/assets/9a07f000-d6fa-4a57-a45a-0d26b715ee03" />
 
-| Camada | Função Principal | Foco Técnico |
-| :--- | :--- | :--- |
-| **Bronze** | **Ingestão (Raw)** | Leitura da fonte (OWID) e persistência imediata. |
-| **Silver** | **Tratamento e DQ** | Limpeza pesada, padronização de datas, remoção de nulos/negativos, e cálculo da **Taxa de Incidência**. |
-| **Gold** | **Modelagem** | Criação do Modelo Estrela (Fact: `fact_daily_metrics`; Dims: `dim_country`, `dim_date`). |
+---
 
-### 💡 Insights & Conclusões (Dashboard)
+## 🧠 O Problema Analítico (Por que Engenharia?)
 
-O painel de BI reflete a narrativa completa da pandemia:
+1.  **Dados Sujos:** Bases públicas de saúde frequentemente contêm erros, como dias com "casos negativos" (correções de base).
+2.  **Escala:** Comparar o volume absoluto de casos do Brasil com o de Portugal gera distorções.
+3.  **Performance:** Calcular agregações complexas em milhões de linhas dentro da ferramenta de visualização (Power BI) degrada a experiência do usuário.
 
-1.  **Evolução Temporal:** O gráfico de linhas exibe claramente as ondas e picos de contágio ao longo dos anos (2020 a 2024).
-2.  **Impacto Proporcional:** O ranking por **Taxa de Incidência (Casos por 100k hab.)** revela o impacto real do vírus em relação à população de cada país, destacando regiões que enfrentaram maiores desafios proporcionais.
-3.  **Contraste:** A separação visual entre Volume Absoluto (Casos) e Taxa (Incidência) garante que a análise não seja distorcida apenas pelo tamanho populacional.
+---
+
+## 🛠️ A Solução: Dimensional Modeling no Lakehouse
+
+Em vez de apenas "limpar dados", atuei como Arquiteto de BI construindo o modelo final dentro do Databricks (**Shift Left**).
+
+### 1. Tratamento e Métricas (Silver)
+* **Data Quality:** Regra de negócio para tratar valores negativos (`daily_new_cases < 0`), garantindo a integridade analítica.
+* **Métrica de Negócio:** Cálculo da *Incidence Rate* (`(Casos / População) * 100.000`), normalizando os dados para análise geográfica justa.
+* [Ver código Silver](silver.ipynb)
+
+### 2. Modelagem Estrela (Gold)
+Aqui está o diferencial. Transformei a tabela única (flat table) em um modelo relacional otimizado para OLAP:
+* **Fato (`fact_daily_metrics`):** Contém apenas as chaves (`iso_code`, `date_key`) e as métricas numéricas.
+* **Dimensões (`dim_country`, `dim_date`):** Tabelas auxiliares para filtros e categorização (Continente, Dia da Semana, Mês).
+* **Performance:** Uso de `ZORDER BY (iso_code, date_key)` na Fato para garantir filtros instantâneos.
+* [Ver código Gold](gold.ipynb)
 
 ---
 
 ## 💻 Tech Stack
 
-* **Cloud & Processing:** Databricks / Apache Spark (PySpark).
-* **Storage:** Delta Lake (Unity Catalog).
-* **Languages:** Python, SQL, DAX.
-* **Visualization:** Microsoft Power BI.# saude_global
+* **Arquitetura:** Medallion (Bronze/Silver/Gold) com Star Schema.
+* **Processamento:** PySpark & SparkSQL.
+* **Governança:** Unity Catalog.
+* **Visualização:** Power BI (conectado ao Modelo Dimensional).
